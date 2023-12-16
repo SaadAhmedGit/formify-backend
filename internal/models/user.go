@@ -31,7 +31,11 @@ const CREATE_USERS_TABLE_QUERY = `
 
 func UserExists(db *sqlx.DB, email string) (bool, error) {
 	var userCount int64
-	db.Get(&userCount, "SELECT COUNT(*) FROM users WHERE email = $1", email)
+	query := `
+		SELECT COUNT(*) FROM users WHERE email = $1
+	`
+
+	db.Get(&userCount, query, email)
 	return userCount > 0, nil
 }
 
@@ -47,15 +51,23 @@ func CreateUser(db *sqlx.DB, newUser User) error {
 		HashedPassword: string(hashedPassword),
 	}
 
-	db.NamedExec("INSERT INTO users (full_name, email, hashed_password) VALUES (:full_name, :email, :hashed_password)", &user)
+	query := `
+		INSERT INTO users (full_name, email, hashed_password)
+		VALUES (:full_name, :email, :hashed_password)
+	`
+	db.NamedExec(query, &user)
 
 	return nil
 }
 
 func FindUser(db *sqlx.DB, email string) (User, error) {
 	var user User
+	query := `
+		SELECT * FROM users
+		WHERE email=$1
+	`
 
-	row := db.QueryRowx("SELECT * FROM users WHERE email=$1", email)
+	row := db.QueryRowx(query, email)
 	if row == nil {
 		log.Printf("Failed to find user: %v", row)
 		return User{}, nil
