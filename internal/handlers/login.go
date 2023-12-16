@@ -26,9 +26,7 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		RespondWithJSON(w, http.StatusBadRequest, JSONResponse{
 			"error": "Invalid request",
 		})
 		return
@@ -36,48 +34,38 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 
 	db, err := database.NewDatabase()
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		RespondWithJSON(w, http.StatusInternalServerError, JSONResponse{
 			"error": "There was an issue with the server. Please try again at a later time",
 		})
 		return
 	}
 
-	user, err := models.FindUser(db, payload.Email, payload.Password)
+	user, err := models.FindUser(db, payload.Email)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		RespondWithJSON(w, http.StatusUnauthorized, JSONResponse{
+			"error": "The user does not exist",
+		})
+		return
+	}
+
+	if !models.UserAuthorized(user.HashedPassword, payload.Password) {
+		RespondWithJSON(w, http.StatusUnauthorized, JSONResponse{
 			"error": "Email or password is incorrect",
 		})
 		return
 	}
 
-	if models.UserAuthorized(user.HashedPassword, payload.Password) == false {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"error": "Email or password is incorrect",
-		})
-		return
-	}
-
-	// Create JWT
-	expirationTime := time.Now().Add(7 * 24 * time.Hour)
-	claims := &LoginClaims{
-		Email: user.Email,
+	// Create JWT Claims
+	expirationTime := time.Now().Add(time.Duration(env.TOKEN_VALIDITY_DAYS) * 24 * time.Hour)
+	claims := LoginClaims{
+		Email: payload.Email,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
 		},
 	}
+	tokenString, err := createJWT(claims, env.JWT_SECRET)
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, _ := token.SignedString([]byte(env.JWT_SECRET))
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	RespondWithJSON(w, http.StatusOK, JSONResponse{
 		"token": tokenString,
 	})
 }

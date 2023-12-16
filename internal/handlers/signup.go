@@ -40,17 +40,17 @@ func HandlePreSignUp(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
-		log.Println("Failed to parse request body.")
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Invalid request"))
+		RespondWithJSON(w, http.StatusBadRequest, JSONResponse{
+			"error": "Invalid request",
+		})
 		return
 	}
 
 	db, err := database.NewDatabase()
 	if err != nil {
-		log.Println("Failed to connect to database.")
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("There was an issue with the server. Please try at a later time"))
+		RespondWithJSON(w, http.StatusInternalServerError, JSONResponse{
+			"error": "There was an issue with the server. Please try again at a later time",
+		})
 		return
 	}
 
@@ -58,15 +58,20 @@ func HandlePreSignUp(w http.ResponseWriter, r *http.Request) {
 	UserExists, err := models.UserExists(db, payload.Email)
 	if err != nil {
 		log.Println("Failed to check if user exists.")
+		RespondWithJSON(w, http.StatusInternalServerError, JSONResponse{
+			"error": "There was an issue with the server. Please try again at a later time",
+		})
+		return
 	}
 	if UserExists {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("An account already exists on this email."))
+		RespondWithJSON(w, http.StatusBadRequest, JSONResponse{
+			"error": "Email is already taken",
+		})
 		return
 	}
 
 	//Create JWT
-	expirationTime := time.Now().Add(5 * time.Hour)
+	expirationTime := time.Now().Add(time.Duration(env.PRESIGNUP_TOKEN_VALIDITY_HOURS) * time.Hour)
 	claims := &preSignUpClaims{
 		Email:    payload.Email,
 		Password: payload.Password,
@@ -75,8 +80,7 @@ func HandlePreSignUp(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, _ := token.SignedString([]byte(env.JWT_ACCOUNT_ACTIVATION))
+	tokenString, err := createJWT(claims, env.JWT_ACCOUNT_ACTIVATION)
 
 	// Send verification email
 	from := mail.NewEmail(env.APP_NAME, env.EMAIL_FROM)
@@ -88,11 +92,16 @@ func HandlePreSignUp(w http.ResponseWriter, r *http.Request) {
 	client := sendgrid.NewSendClient(env.SENDGRID_API_KEY)
 	_, err = client.Send(message)
 	if err != nil {
-		log.Println("Failed to send verification email.")
+		log.Printf("Failed to send verification email: %v", err)
+		RespondWithJSON(w, http.StatusInternalServerError, JSONResponse{
+			"error": "There was an issue with the server. Please try again at a later time",
+		})
+		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Verification email sent. Please check your inbox."))
+	RespondWithJSON(w, http.StatusOK, JSONResponse{
+		"message": "Verification email sent.",
+	})
 }
 
 func HandleSignUp(w http.ResponseWriter, r *http.Request) {
@@ -108,9 +117,9 @@ func HandleSignUp(w http.ResponseWriter, r *http.Request) {
 		return []byte(env.JWT_ACCOUNT_ACTIVATION), nil
 	})
 	if err != nil || !token.Valid {
-		log.Println("Invalid JWT token.")
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Your verification link is invalid."))
+		RespondWithJSON(w, http.StatusBadRequest, JSONResponse{
+			"error": "Your verification link is invalid or expired. Please try again.",
+		})
 		return
 	}
 
@@ -119,17 +128,26 @@ func HandleSignUp(w http.ResponseWriter, r *http.Request) {
 	newUser.Email = claims.Email
 	newUser.HashedPassword = claims.Password
 
-	// Create user
 	db, err := database.NewDatabase()
 	if err != nil {
-		log.Println("Failed to connect to database.")
+		log.Printf("Failed to connect to database: %v", err)
+		RespondWithJSON(w, http.StatusInternalServerError, JSONResponse{
+			"error": "There was an issue with the server. Please try again at a later time",
+		})
+		return
 	}
 
+	// Create user
 	err = models.CreateUser(db, newUser)
 	if err != nil {
-		log.Println("Failed to create user.")
+		log.Printf("Failed to create user: %v", err)
+		RespondWithJSON(w, http.StatusInternalServerError, JSONResponse{
+			"error": "There was an issue with the server. Please try again at a later time",
+		})
+		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("User created successfully."))
+	RespondWithJSON(w, http.StatusOK, JSONResponse{
+		"message": "User created successfully.",
+	})
 }
