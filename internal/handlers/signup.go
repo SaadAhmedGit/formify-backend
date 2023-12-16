@@ -2,14 +2,11 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/golang-jwt/jwt"
-	"github.com/sendgrid/sendgrid-go"
-	"github.com/sendgrid/sendgrid-go/helpers/mail"
 
 	"github.com/SaadAhmedGit/forms/internal/config"
 	"github.com/SaadAhmedGit/forms/internal/database"
@@ -55,15 +52,8 @@ func HandlePreSignUp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if email is already taken
-	UserExists, err := models.UserExists(db, payload.Email)
+	_, err = models.FindUser(db, payload.Email)
 	if err != nil {
-		log.Println("Failed to check if user exists.")
-		RespondWithJSON(w, http.StatusInternalServerError, JSONResponse{
-			"error": "There was an issue with the server. Please try again at a later time",
-		})
-		return
-	}
-	if UserExists {
 		RespondWithJSON(w, http.StatusBadRequest, JSONResponse{
 			"error": "Email is already taken",
 		})
@@ -82,15 +72,7 @@ func HandlePreSignUp(w http.ResponseWriter, r *http.Request) {
 
 	tokenString, err := createJWT(claims, env.JWT_ACCOUNT_ACTIVATION)
 
-	// Send verification email
-	from := mail.NewEmail(env.APP_NAME, env.EMAIL_FROM)
-	subject := fmt.Sprintf("Verify your email for %s", env.APP_NAME)
-	to := mail.NewEmail(payload.FullName, payload.Email)
-	plainTextContent := fmt.Sprintf("Please verify your email by clicking on the following link: %s/signup?token=%s", env.DEV_SERVER_URL, tokenString)
-	htmlContent := fmt.Sprintf("Please verify your email by clicking on the following link: %s/signup?token=%s", env.DEV_SERVER_URL, tokenString)
-	message := mail.NewSingleEmail(from, subject, to, plainTextContent, htmlContent)
-	client := sendgrid.NewSendClient(env.SENDGRID_API_KEY)
-	_, err = client.Send(message)
+	err = sendVerificationEmail(payload, tokenString)
 	if err != nil {
 		log.Printf("Failed to send verification email: %v", err)
 		RespondWithJSON(w, http.StatusInternalServerError, JSONResponse{
@@ -108,7 +90,7 @@ func HandleSignUp(w http.ResponseWriter, r *http.Request) {
 
 	var claims preSignUpClaims
 
-	// TODO: Swap to body when frontend is made
+	// TODO: Swap query with body when frontend is made
 	query := r.URL.Query()
 	tokenParam := query.Get("token")
 
