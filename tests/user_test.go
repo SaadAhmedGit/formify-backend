@@ -8,7 +8,7 @@ import (
 	"github.com/SaadAhmedGit/forms/internal/models"
 )
 
-func userExists(t *testing.T) {
+func findUser(t *testing.T) {
 	user := models.User{
 		FullName:       "John Doe",
 		Email:          "johndoe@example.com",
@@ -18,10 +18,6 @@ func userExists(t *testing.T) {
 	err = models.CreateUser(db, user)
 	assert.NoError(t, err)
 
-	userExists, err := models.UserExists(db, user.Email)
-	assert.NoError(t, err)
-	assert.True(t, userExists)
-
 	user, err = models.FindUser(db, user.Email)
 	assert.NoError(t, err)
 	assert.Equal(t, "John Doe", user.FullName)
@@ -29,9 +25,8 @@ func userExists(t *testing.T) {
 }
 
 func userDoesNotExist(t *testing.T) {
-	userExists, err := models.UserExists(db, "emailthatwillprobablynevergetused@idk.com")
-	assert.NoError(t, err)
-	assert.False(t, userExists)
+	_, err := models.FindUser(db, "emailthatwillprobablynevergetused@idk.com")
+	assert.Error(t, err)
 }
 
 func TestUser(t *testing.T) {
@@ -39,7 +34,7 @@ func TestUser(t *testing.T) {
 	// Create user schema
 	db.MustExec(models.CREATE_USERS_TABLE_QUERY)
 
-	userExists(t)
+	findUser(t)
 	userDoesNotExist(t)
 
 	//Delete user schema
