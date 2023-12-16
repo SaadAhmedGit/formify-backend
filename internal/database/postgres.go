@@ -3,7 +3,6 @@ package database
 import (
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/SaadAhmedGit/forms/internal/config"
 	"github.com/SaadAhmedGit/forms/internal/models"
@@ -20,13 +19,12 @@ func NewDatabase() (*sqlx.DB, error) {
 	return db, nil
 }
 
-func buildSchema() string {
-	schemaArray := []string{}
-	schemaArray = append(schemaArray, models.CREATE_USERS_TABLE_QUERY)
+func createTables(db *sqlx.DB) {
+	table_creation_queries := []string{models.CREATE_FORMS_TABLE_QUERY, models.CREATE_USERS_TABLE_QUERY}
 
-	schema := strings.Join(schemaArray, "\n\n")
-
-	return schema
+	for _, query := range table_creation_queries {
+		db.Exec(query)
+	}
 }
 
 func createConnection() (*sqlx.DB, error) {
@@ -47,8 +45,7 @@ func createConnection() (*sqlx.DB, error) {
 		return db, err
 	}
 
-	schema := buildSchema()
-	db.MustExec(schema)
+	createTables(db)
 
 	return db, nil
 }
