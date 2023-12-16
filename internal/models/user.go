@@ -4,30 +4,38 @@ import (
 	"log"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
 type User struct {
-	ID             uint `gorm:"primaryKey; autoIncrement"`
-	FullName       string
-	Email          string    `gorm:"not null; unique"`
-	HashedPassword string    `gorm:"not null; type:char(255)"`
-	CreatedAt      time.Time `gorm:"autoCreateTime"`
-	UpdatedAt      time.Time `gorm:"autoUpdateTime"`
+	ID             int64  `db:"id"`
+	FullName       string `db:"full_name"`
+	Email          string `db:"email"`
+	HashedPassword string `db:"hashed_password"`
+
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
 }
 
-func UserExists(db *gorm.DB, email string) (bool, error) {
-	var userCount int64
-	query := db.Model(&User{}).Where("email = ?", email).Count(&userCount)
-	if query.Error != nil {
-		return false, query.Error
-	}
+const CREATE_USERS_TABLE_QUERY = `
+	CREATE TABLE IF NOT EXISTS users (
+		id SERIAL PRIMARY KEY,
+		full_name TEXT,
+		email TEXT NOT NULL UNIQUE,
+		hashed_password CHAR(255) NOT NULL,
+		created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+	);
+`
 
+func UserExists(db *sqlx.DB, email string) (bool, error) {
+	var userCount int64
+	db.Get(&userCount, "SELECT COUNT(*) FROM users WHERE email = $1", email)
 	return userCount > 0, nil
 }
 
-func CreateUser(db *gorm.DB, newUser User) error {
+func CreateUser(db *sqlx.DB, newUser User) error {
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newUser.HashedPassword), bcrypt.DefaultCost)
 	if err != nil {
@@ -39,22 +47,24 @@ func CreateUser(db *gorm.DB, newUser User) error {
 		HashedPassword: string(hashedPassword),
 	}
 
-	query := db.Create(&user)
-	if query.Error != nil {
-		return query.Error
-	}
+	db.NamedExec("INSERT INTO users (full_name, email, hashed_password) VALUES (:full_name, :email, :hashed_password)", &user)
 
 	return nil
 }
 
-func FindUser(db *gorm.DB, email string, password string) (User, error) {
+func FindUser(db *sqlx.DB, email string) (User, error) {
 	var user User
 
-	query := db.Where("email = ?", email).First(&user)
-	if query.Error != nil {
-		return User{}, query.Error
+	row := db.QueryRowx("SELECT * FROM users WHERE email=$1", email)
+	if row == nil {
+		log.Printf("Failed to find user: %v", row)
+		return User{}, nil
 	}
-
+	err := row.StructScan(&user)
+	if err != nil {
+		log.Printf("Failed to scan user: %v", err)
+		return User{}, err
+	}
 	return user, nil
 }
 
