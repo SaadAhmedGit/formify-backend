@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -51,11 +52,11 @@ func CreateUser(db *sqlx.DB, newUser User) error {
 		HashedPassword: string(hashedPassword),
 	}
 
-	query := `
+	creationQuery := `
 		INSERT INTO users (full_name, email, hashed_password)
 		VALUES (:full_name, :email, :hashed_password)
 	`
-	db.NamedExec(query, &user)
+	db.NamedExec(creationQuery, &user)
 
 	return nil
 }
@@ -78,6 +79,43 @@ func FindUser(db *sqlx.DB, email string) (User, error) {
 		return User{}, err
 	}
 	return user, nil
+}
+
+func DeleteUser(db *sqlx.DB, email string) error {
+	tx, err := db.Beginx()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %v", err)
+	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	deleteQuery := `
+		DELETE FROM users
+		WHERE email = $1
+	`
+	result, err := tx.Exec(deleteQuery, email)
+	if err != nil {
+		return fmt.Errorf("failed to delete user with email %s: %v", email, err)
+	}
+
+	affectedRows, _ := result.RowsAffected()
+
+	if affectedRows < 1 {
+		return fmt.Errorf("no user found with email %s", email)
+	} else if affectedRows > 1 {
+		return fmt.Errorf("multiple users deleted with email %s", email)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %v", err)
+	}
+
+	return nil
 }
 
 func UserAuthorized(hashedPassword string, plaintText string) bool {
