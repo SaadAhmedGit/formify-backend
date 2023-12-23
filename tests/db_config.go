@@ -13,14 +13,14 @@ import (
 )
 
 var (
-	db, err = createConnection()
+	db, _ = createConnection()
 )
 
 func NewDatabase() (*sqlx.DB, error) {
 	return db, nil
 }
 
-func buildSchema() string {
+func buildSchemaQuery() string {
 	schemaArray := []string{}
 	schemaArray = append(schemaArray, models.CREATE_USERS_TABLE_QUERY)
 
@@ -47,8 +47,8 @@ func createConnection() (*sqlx.DB, error) {
 		return db, err
 	}
 
-	//schema := buildSchema()
-	//db.MustExec(schema)
+	schemaQuery := buildSchemaQuery()
+	db.MustExec(schemaQuery)
 
 	return db, nil
 }
