@@ -1,4 +1,4 @@
-module github.com/SaadAhmedGit/forms
+module github.com/SaadAhmedGit/formify
 
 go 1.21.3
 

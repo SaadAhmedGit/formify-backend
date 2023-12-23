@@ -5,8 +5,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/SaadAhmedGit/forms/internal/config"
-	"github.com/SaadAhmedGit/forms/internal/routes"
+	"github.com/SaadAhmedGit/formify/internal/config"
+	"github.com/SaadAhmedGit/formify/internal/routes"
 )
 
 func main() {
