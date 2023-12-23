@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	db, err = createConnection()
+	db, _ = createConnection()
 )
 
 func NewDatabase() (*sqlx.DB, error) {
