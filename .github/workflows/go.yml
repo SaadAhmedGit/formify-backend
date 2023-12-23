@@ -28,11 +28,17 @@ jobs:
         run: |
           docker run -d \
             --name postgres \
-            -e POSTGRES_DB=formify_dev \
-            -e POSTGRES_USER=saad \
-            -e POSTGRES_PASSWORD=password \
+            -e POSTGRES_DB=formify_test \
+            -e POSTGRES_USER=gh_action_user \
+            -e POSTGRES_PASSWORD=gh_action_user_password \
             -p 5432:5432 \
             postgres
 
       - name: Test
+        env:
+          TEST_DB_HOST: localhost
+          TEST_DB_PORT: 5432
+          TEST_DB_NAME: formify_test
+          TEST_DB_USER: gh_action_user
+          TEST_DB_PASSWORD: gh_action_user_password
         run: go test -v ./tests/...
