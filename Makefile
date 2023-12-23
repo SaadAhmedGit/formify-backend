@@ -1,11 +1,8 @@
--include .env
--include test.env
-
 default:
-	@go run ./cmd/$(APP_NAME)/main.go
+	@go run ./cmd/formify/main.go
 
 build:
-	@go build -o ./bin/$(APP_NAME) ./cmd/$(APP_NAME)/main.go
+	@go build -o ./bin/formify ./cmd/formify/main.go
 
 test:
 	@go test -v ./tests/...
