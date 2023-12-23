@@ -7,8 +7,8 @@ import (
 
 	"github.com/golang-jwt/jwt"
 
-	"github.com/SaadAhmedGit/forms/internal/database"
-	"github.com/SaadAhmedGit/forms/internal/models"
+	"github.com/SaadAhmedGit/formify/internal/database"
+	"github.com/SaadAhmedGit/formify/internal/models"
 )
 
 type LoginDTO struct {

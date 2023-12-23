@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/SaadAhmedGit/forms/internal/config"
-	"github.com/SaadAhmedGit/forms/internal/models"
+	"github.com/SaadAhmedGit/formify/internal/config"
+	"github.com/SaadAhmedGit/formify/internal/models"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"

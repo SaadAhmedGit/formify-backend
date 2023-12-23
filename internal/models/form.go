@@ -18,6 +18,13 @@ type Form struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
+type Question struct {
+	ID     int64  `db:"id"`
+	Type   string `db:"type"`
+	Data   string `db:"question_data"`
+	FormID int64  `db:"form_id"`
+}
+
 const CREATE_FORMS_TABLE_QUERY = `
 	CREATE TABLE IF NOT EXISTS forms (
 		id SERIAL PRIMARY KEY,
@@ -26,6 +33,17 @@ const CREATE_FORMS_TABLE_QUERY = `
 		description TEXT,
 		url TEXT,
 		picture_url TEXT,
+		created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+	);
+`
+
+const CREATE_QUESTIONS_TABLE_QUERY = `
+	CREATE TABLE IF NOT EXISTS questions (
+		id SERIAL PRIMARY KEY,
+		type TEXT,
+		question_data JSONB,
+		form_id INT,
 		created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 		updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 	);

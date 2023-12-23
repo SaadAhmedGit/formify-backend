@@ -3,7 +3,7 @@ package routes
 import (
 	"net/http"
 
-	"github.com/SaadAhmedGit/forms/internal/handlers"
+	"github.com/SaadAhmedGit/formify/internal/handlers"
 	"github.com/gorilla/mux"
 )
 
