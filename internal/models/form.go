@@ -18,43 +18,40 @@ type Form struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
-type Question struct {
-	ID     int64  `db:"id"`
-	Type   string `db:"type"`
-	Data   string `db:"question_data"`
-	FormID int64  `db:"form_id"`
-}
-
 const CREATE_FORMS_TABLE_QUERY = `
 	CREATE TABLE IF NOT EXISTS forms (
 		id SERIAL PRIMARY KEY,
 		title TEXT,
-		owner INT,
+		owner INT REFERENCES users(id),
 		description TEXT,
-		url TEXT,
+		url TEXT UNIQUE NOT NULL,
 		picture_url TEXT,
-		created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-		updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-	);
-`
 
-const CREATE_QUESTIONS_TABLE_QUERY = `
-	CREATE TABLE IF NOT EXISTS questions (
-		id SERIAL PRIMARY KEY,
-		type TEXT,
-		question_data JSONB,
-		form_id INT,
 		created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 		updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 	);
 `
 
 func CreateForm(db *sqlx.DB, form Form) error {
-	query := `
+	creationQry := `
 		INSERT INTO forms (title, owner, description, url, picture_url)
 		VALUES (:title, :owner, :description, :url, :picture_url)
 	`
 
-	_, err := db.NamedExec(query, &form)
-	return err
+	_, err := db.NamedExec(creationQry, &form)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func FindForm(db *sqlx.DB, url string) (Form, error) {
+	var form Form
+	qry := `
+		SELECT * FROM forms WHERE url = $1
+	`
+
+	err := db.Get(&form, qry, url)
+	return form, err
 }
