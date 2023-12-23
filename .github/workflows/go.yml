@@ -24,5 +24,5 @@ jobs:
     - name: Build
       run: go build ./cmd/formify/main.go
 
-    - name: Test Users
-      run: go test -v ./tests/user_test.go
+    - name: Test
+      run: go test -v ./tests/...
