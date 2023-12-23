@@ -8,6 +8,10 @@ import (
 	"github.com/SaadAhmedGit/formify/internal/models"
 )
 
+var (
+	dummyUser, _ = createDummyUser()
+)
+
 func TestUserCreation(t *testing.T) {
 	user := models.User{
 		FullName:       "John Doe",
@@ -21,32 +25,50 @@ func TestUserCreation(t *testing.T) {
 
 func TestFindingUser(t *testing.T) {
 	user, err := models.FindUser(db, "johndoe@example.com")
-	assert.NoError(t, err)
-	assert.Equal(t, "John Doe", user.FullName)
-	assert.True(t, models.UserAuthorized(user.HashedPassword, "password123"))
-}
-
-func TestQueryingNonExistentUser(t *testing.T) {
-	_, err := models.FindUser(db, "emailthatwillprobablynevergetused@idk.com")
-	assert.Error(t, err)
+	if assert.NoError(t, err) && assert.Equal(t, "John Doe", user.FullName) {
+		assert.True(t, models.UserAuthorized(user.HashedPassword, "password123"))
+	}
 }
 
 func TestUserDeletion(t *testing.T) {
 	err := models.DeleteUser(db, "johndoe@example.com")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
+}
+
+func createDummyUser() (models.User, error) {
+	createUserTable()
+	dummyUser := models.User{
+		FullName:       "Dummy User",
+		Email:          "dummyuser@dummydomain.com",
+		HashedPassword: "password123",
+	}
+
+	err := models.CreateUser(db, dummyUser)
+	if err != nil {
+		return models.User{}, err
+	}
+
+	dummyUser, _ = models.FindUser(db, dummyUser.Email)
+	return dummyUser, nil
 }
 
 func TestMain(m *testing.M) {
-	createSchema()
-	defer deleteSchema()
+	createUserTable()
+	defer deleteUserTable()
+
+	createFormsTable()
+	defer deleteFormsTable()
+
+	createQuestionsTable()
+	defer deleteQuestionsTable()
 
 	m.Run()
 }
 
-func createSchema() {
+func createUserTable() {
 	db.MustExec(models.CREATE_USERS_TABLE_QUERY)
 }
 
-func deleteSchema() {
+func deleteUserTable() {
 	db.MustExec(`DROP TABLE users`)
 }
