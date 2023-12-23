@@ -1,4 +1,4 @@
-name: Test
+name: Go
 
 on:
   push:
@@ -8,6 +8,20 @@ on:
 
 jobs:
   build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21.3'
+
+      - name: Build
+        run: go build ./cmd/formify/main.go
+  
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
