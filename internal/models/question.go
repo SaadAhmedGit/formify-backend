@@ -27,6 +27,10 @@ const CREATE_QUESTIONS_TABLE_QUERY = `
 	);
 `
 
+const CREATE_INDICES_ON_QUESTIONS_QUERY = `
+	CREATE INDEX IF NOT EXISTS questions_form_id_idx ON questions (form_id);
+`
+
 func CreateQuestion(db *sqlx.DB, question Question) error {
 	creationQry := `
 		INSERT INTO questions (type, question_data, form_id)
