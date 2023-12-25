@@ -24,6 +24,8 @@ func NewDatabase() (*sqlx.DB, error) {
 func buildSchemaQuery() string {
 	schemaArray := []string{}
 	schemaArray = append(schemaArray, models.CREATE_USERS_TABLE_QUERY)
+	schemaArray = append(schemaArray, models.CREATE_FORMS_TABLE_QUERY)
+	schemaArray = append(schemaArray, models.CREATE_QUESTIONS_TABLE_QUERY)
 
 	schema := strings.Join(schemaArray, "\n\n")
 
@@ -60,6 +62,7 @@ func createConnection() (*sqlx.DB, error) {
 
 	schemaQuery := buildSchemaQuery()
 	db.MustExec(schemaQuery)
+	db.MustExec(models.CREATE_INDICES_ON_QUESTIONS_QUERY)
 
 	return db, nil
 }
