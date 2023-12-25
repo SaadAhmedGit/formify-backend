@@ -1,3 +1,5 @@
+-include .env
+
 default:
 	@go run ./cmd/formify/main.go
 
