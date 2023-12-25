@@ -17,7 +17,8 @@ type LoginDTO struct {
 }
 
 type LoginClaims struct {
-	Email string `json:"email"`
+	Email    string `json:"email"`
+	FullName string `json:"full_name"`
 	jwt.StandardClaims
 }
 
@@ -58,14 +59,95 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 	// Create JWT Claims
 	expirationTime := time.Now().Add(time.Duration(env.TOKEN_VALIDITY_DAYS) * 24 * time.Hour)
 	claims := LoginClaims{
-		Email: payload.Email,
+		Email:    payload.Email,
+		FullName: user.FullName,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
 		},
 	}
 	tokenString, err := createJWT(claims, env.JWT_SECRET)
 
+	// Set token cookies
+	tokenCookie := http.Cookie{
+		Name:  "token",
+		Value: tokenString,
+
+		Expires:  expirationTime,
+		HttpOnly: false,
+
+		SameSite: http.SameSiteLaxMode,
+		Secure:   false,
+	}
+	tokenSetCookie := http.Cookie{
+		Name:  "token_set",
+		Value: "true",
+
+		Expires:  expirationTime,
+		HttpOnly: false,
+
+		SameSite: http.SameSiteLaxMode,
+		Secure:   false,
+	}
+
+	http.SetCookie(w, &tokenCookie)
+	http.SetCookie(w, &tokenSetCookie)
 	RespondWithJSON(w, http.StatusOK, JSONResponse{
-		"token": tokenString,
+		"user": map[string]string{
+			"email":     user.Email,
+			"full_name": user.FullName,
+		},
+	})
+}
+
+func HandleVerify(w http.ResponseWriter, r *http.Request) {
+	tokenCookie, err := r.Cookie("token")
+	if err != nil {
+		RespondWithJSON(w, http.StatusBadRequest, JSONResponse{
+			"error": "Invalid request",
+		})
+		return
+	}
+
+	token, err := verifyToken(tokenCookie.Value)
+	if err != nil {
+		RespondWithJSON(w, http.StatusUnauthorized, JSONResponse{
+			"error": "Invalid token",
+		})
+		return
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		RespondWithJSON(w, http.StatusUnauthorized, JSONResponse{
+			"error": "Invalid token",
+		})
+		return
+	}
+
+	RespondWithJSON(w, http.StatusOK, JSONResponse{
+		"user": map[string]string{
+			"email":     claims["email"].(string),
+			"full_name": claims["full_name"].(string),
+		},
+	})
+}
+
+func HandleLogout(w http.ResponseWriter, r *http.Request) {
+	tokenCookie, err := r.Cookie("token")
+	tokenSetCookie, err := r.Cookie("token_set")
+	if err != nil {
+		RespondWithJSON(w, http.StatusBadRequest, JSONResponse{
+			"error": "Invalid request",
+		})
+		return
+	}
+
+	tokenCookie.Expires = time.Now().AddDate(0, 0, -1)
+	tokenSetCookie.Expires = time.Now().AddDate(0, 0, -1)
+	http.SetCookie(w, tokenCookie)
+	http.SetCookie(w, tokenSetCookie)
+
+	RespondWithJSON(w, http.StatusOK, JSONResponse{
+		"message": "Successfully logged out",
 	})
 }
