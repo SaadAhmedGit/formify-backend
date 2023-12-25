@@ -3,8 +3,9 @@ package routes
 import (
 	"net/http"
 
-	"github.com/SaadAhmedGit/formify/internal/handlers"
 	"github.com/gorilla/mux"
+
+	"github.com/SaadAhmedGit/formify/internal/handlers"
 )
 
 var (
@@ -19,9 +20,11 @@ func initRouter() *mux.Router {
 	mux := mux.NewRouter()
 
 	// Auth
-	mux.HandleFunc("/pre-signup", handlers.HandlePreSignUp).Methods("POST")
-	mux.HandleFunc("/signup", handlers.HandleSignUp).Methods("GET") // TODO: Change to POST
-	mux.HandleFunc("/login", handlers.HandleLogin).Methods("GET")
+	mux.HandleFunc("/api/auth/login", handlers.HandleLogin).Methods("POST")
+	mux.HandleFunc("/api/auth/verify", handlers.HandleVerify).Methods("POST")
+	mux.HandleFunc("/api/auth/logout", handlers.HandleLogout).Methods("POST")
+	mux.HandleFunc("/api/auth/signup", handlers.HandleSignUp).Methods("GET") // TODO: Change to POST
+	mux.HandleFunc("/api/auth/pre-signup", handlers.HandlePreSignUp).Methods("POST")
 
 	return mux
 }
