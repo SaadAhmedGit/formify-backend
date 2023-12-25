@@ -12,8 +12,8 @@ var (
 
 type config struct {
 	// General
-	APP_NAME string `env:"APP_NAME" envDefault:"Forms"`
-	PORT     int    `env:"PORT" envDefault:"3000"`
+	APP_NAME string `env:"APP_NAME" envDefault:"Formify"`
+	PORT     int    `env:"PORT" envDefault:"5000"`
 
 	// Database
 	DB_CONN_STRING string `env:"DB_CONN_STRING"`
@@ -25,8 +25,8 @@ type config struct {
 
 	// Dev
 	IS_DEV          bool   `env:"IS_DEV" envDefault:"true"`
-	DEV_CLIENT_URL  string `env:"DEV_CLIENT_URL" envDefault:"http://localhost:8080"`
-	DEV_SERVER_URL  string `env:"DEV_SERVER_URL" envDefault:"http://localhost:3000"`
+	DEV_CLIENT_URL  string `env:"DEV_CLIENT_URL" envDefault:"http://localhost:3000"`
+	DEV_SERVER_URL  string `env:"DEV_SERVER_URL" envDefault:"http://localhost:5000"`
 	PROD_CLIENT_URL string `env:"PROD_CLIENT_URL" envDefault:"https://forms-frontend.vercel.app"`
 	PROD_SERVER_URL string `env:"PROD_SERVER_URL" envDefault:"https://forms-backend.vercel.app"`
 
