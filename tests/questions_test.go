@@ -27,6 +27,7 @@ func TestQuestionsCreation(t *testing.T) {
 }
 
 func createQuestionsTable() {
+	db.MustExec(models.CREATE_INDICES_ON_QUESTIONS_QUERY)
 	db.MustExec(models.CREATE_QUESTIONS_TABLE_QUERY)
 }
 
