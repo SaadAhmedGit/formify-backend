@@ -25,6 +25,12 @@ func createJWT(claims jwt.Claims, jwtSecret string) (string, error) {
 	return token.SignedString([]byte(jwtSecret))
 }
 
+func verifyToken(token string) (*jwt.Token, error) {
+	return jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+		return []byte(env.JWT_SECRET), nil
+	})
+}
+
 func sendVerificationEmail(payload PreSignUpDTO, tokenString string) error {
 	from := mail.NewEmail(env.APP_NAME, env.EMAIL_FROM)
 	subject := fmt.Sprintf("Verify your email for %s", env.APP_NAME)
