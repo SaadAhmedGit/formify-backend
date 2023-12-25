@@ -52,8 +52,8 @@ func HandlePreSignUp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if email is already taken
-	_, err = models.FindUser(db, payload.Email)
-	if err != nil {
+	user, err := models.FindUser(db, payload.Email)
+	if user.Email != "" || err == nil {
 		RespondWithJSON(w, http.StatusBadRequest, JSONResponse{
 			"error": "Email is already taken",
 		})
@@ -63,6 +63,7 @@ func HandlePreSignUp(w http.ResponseWriter, r *http.Request) {
 	//Create JWT
 	expirationTime := time.Now().Add(time.Duration(env.PRESIGNUP_TOKEN_VALIDITY_HOURS) * time.Hour)
 	claims := &preSignUpClaims{
+		FullName: payload.FullName,
 		Email:    payload.Email,
 		Password: payload.Password,
 		StandardClaims: jwt.StandardClaims{
@@ -107,6 +108,7 @@ func HandleSignUp(w http.ResponseWriter, r *http.Request) {
 
 	// Extract JWT token claims
 	var newUser models.User
+	newUser.FullName = claims.FullName
 	newUser.Email = claims.Email
 	newUser.HashedPassword = claims.Password
 
